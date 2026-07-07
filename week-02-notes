@@ -1,0 +1,85 @@
+az network nsg rule create \
+  --resource-group lab-test-2 \
+  --nsg-name NSG-1 \
+  --name allow-http \
+  --priority 100 \
+  --source-address-prefixes Internet \
+  --destination-port-ranges 80 \
+  --access Allow \
+  --protocol Tcp \
+  --direction Inbound
+
+37.225.0.185
+
+
+az network nsg rule create \
+  --resource-group lab-test-2 \
+  --nsg-name NSG-1 \
+  --name allow-ssh-from-me \
+  --priority 110 \
+  --source-address-prefixes 37.225.0.185/32 \
+  --destination-port-ranges 22 \
+  --access Allow \
+  --protocol Tcp \
+  --direction Inbound
+
+az network nsg rule create \
+  --resource-group lab-test-2 \
+  --nsg-name NSG-2 \
+  --name allow-mysql-from-web \
+  --priority 100 \
+  --source-address-prefixes 10.10.1.0/24 \
+  --destination-port-ranges 3306 \
+  --access Allow \
+  --protocol Tcp \
+  --direction Inbound
+
+
+
+az vm create \
+  --resource-group lab-test-2 \
+  --name web-vm \
+  --image Ubuntu2204 \
+  --size Standard_B2s_v2 \
+  --vnet-name lab-vnet1 \
+  --subnet subnet-1 \
+  --admin-username azureuser \
+  --generate-ssh-keys \
+  --public-ip-sku Standard
+
+
+az vm create \
+  --resource-group lab-test-2  \
+  --name db-vm \
+  --image Ubuntu2204 \
+  --size Standard_B2s_v2 \
+  --vnet-name lab-vnet1 \
+  --subnet subnet-2 \
+  --admin-username azureuser \
+  --generate-ssh-keys \
+  --public-ip-address ""
+
+
+
+
+ssh azureuser@74.248.17.144
+
+az network nsg rule create \
+  --resource-group lab-test-2 \
+  --nsg-name NSG-1 \
+  --name allow-ssh-from-me2 \
+  --priority 110 \
+  --source-address-prefixes 172.201.33.160/32 \
+  --destination-port-ranges 22 \
+  --access Allow \
+  --protocol Tcp \
+  --direction Inbound
+# Lab: VNet + 2 subnets + NSG
+
+## Kluczowe lekcje
+- `az vm create` tworzy NSG na NIC automatycznie — powstaje podwójna warstwa (subnet + NIC).
+  Rozwiązanie: odłączyć NIC-level NSG przez portal albo `az network nic update --remove networkSecurityGroup`
+- NSG default deny inbound — trzeba wprost pozwolić (allow-http, allow-ssh z mojego IP)
+- Effective security rules w portalu = miejsce do debugowania warstw NSG
+- Ubuntu Server 22.04 z Azure ma UFW disabled by default — sprawdzić na wszelki wypadek `sudo ufw status`
+- Propagacja reguł NSG czasem trwa parę minut po zmianie
